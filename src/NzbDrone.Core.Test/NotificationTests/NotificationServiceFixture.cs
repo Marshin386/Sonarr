@@ -111,5 +111,24 @@ namespace NzbDrone.Core.Test.NotificationTests
             GivenImportCompleteMessage(GivenRemoteEpisode("Series.Title.S02.1080p.BluRay.x264-RlsGrp", 2))
                 .Should().Be("Series Title - Season 2 [Bluray-1080p]");
         }
+
+        [Test]
+        public void should_skip_import_complete_when_the_import_has_no_library_file()
+        {
+            var remoteEpisode = GivenRemoteEpisode("Series.Title.S01E01.1080p.BluRay.x264-RlsGrp", 1);
+            var trackedDownload = new TrackedDownload
+            {
+                RemoteEpisode = remoteEpisode,
+                DownloadItem = new DownloadClientItem
+                {
+                    DownloadClientInfo = new DownloadClientItemClientInfo(),
+                    OutputPath = new OsPath(@"C:\Downloads\Series.Title".AsOsAgnostic())
+                }
+            };
+
+            Subject.Handle(new DownloadCompletedEvent(trackedDownload, _series, remoteEpisode.Episodes, [null], null));
+
+            _notification.Verify(notification => notification.OnImportComplete(It.IsAny<ImportCompleteMessage>()), Times.Never());
+        }
     }
 }

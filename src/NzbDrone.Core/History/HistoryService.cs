@@ -200,6 +200,12 @@ namespace NzbDrone.Core.History
                 return;
             }
 
+            if (message.ImportedEpisode == null)
+            {
+                // TODO: Round 3 records import history when a staged file is adopted.
+                return;
+            }
+
             var downloadId = message.DownloadId;
 
             if (downloadId.IsNullOrWhiteSpace())

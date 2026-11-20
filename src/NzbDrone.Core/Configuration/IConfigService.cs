@@ -27,6 +27,9 @@ namespace NzbDrone.Core.Configuration
         bool AutoUnmonitorPreviouslyDownloadedEpisodes { get; set; }
         string RecycleBin { get; set; }
         int RecycleBinCleanupDays { get; set; }
+        bool ReviewLocationEnabled { get; set; }
+        string ReviewLocation { get; set; }
+        bool KeepOriginalFile { get; set; }
         ProperDownloadTypes DownloadPropersAndRepacks { get; set; }
         bool CreateEmptySeriesFolders { get; set; }
         bool DeleteEmptyFolders { get; set; }

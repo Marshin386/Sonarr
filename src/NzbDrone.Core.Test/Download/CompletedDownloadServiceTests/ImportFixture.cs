@@ -538,6 +538,30 @@ namespace NzbDrone.Core.Test.Download.CompletedDownloadServiceTests
         }
 
         [Test]
+        public void should_mark_a_staged_review_import_as_imported_without_an_episode_file()
+        {
+            Mocker.GetMock<IDownloadedEpisodesImportService>()
+                  .Setup(v => v.ProcessPath(It.IsAny<string>(), It.IsAny<ImportMode>(), It.IsAny<Series>(), It.IsAny<DownloadClientItem>()))
+                  .Returns(new List<ImportResult>
+                  {
+                      ImportResult.Staged(
+                          new ImportDecision(new LocalEpisode
+                          {
+                              Path = @"C:\TestPath\Droned.S01E01.mkv",
+                              Episodes = _trackedDownload.RemoteEpisode.Episodes
+                          }),
+                          @"C:\review\tv\Show Name\Season 01\Show.mkv".AsOsAgnostic())
+                  });
+
+            Subject.Import(_trackedDownload);
+
+            AssertImported();
+
+            Mocker.GetMock<IEventAggregator>()
+                  .Verify(v => v.PublishEvent(It.Is<DownloadCompletedEvent>(e => e.EpisodeFiles != null && e.EpisodeFiles.Count == 0)), Times.Once());
+        }
+
+        [Test]
         public void should_not_check_download_client_files_when_files_were_imported()
         {
             Mocker.GetMock<IDownloadedEpisodesImportService>()

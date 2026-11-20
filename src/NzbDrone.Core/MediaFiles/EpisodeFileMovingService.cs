@@ -22,6 +22,7 @@ namespace NzbDrone.Core.MediaFiles
         EpisodeFile MoveEpisodeFile(EpisodeFile episodeFile, Series series);
         EpisodeFile MoveEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode);
         EpisodeFile CopyEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode);
+        string StageEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode, bool copyOnly);
     }
 
     public class EpisodeFileMovingService : IMoveEpisodeFiles
@@ -105,6 +106,113 @@ namespace NzbDrone.Core.MediaFiles
 
             _logger.Debug("Copying episode file: {0} to {1}", episodeFile.Path, filePath);
             return TransferFile(episodeFile, localEpisode.Series, localEpisode.Episodes, filePath, TransferMode.Copy, localEpisode);
+        }
+
+        public string StageEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode, bool copyOnly)
+        {
+            Ensure.That(episodeFile, () => episodeFile).IsNotNull();
+            Ensure.That(localEpisode, () => localEpisode).IsNotNull();
+            Ensure.That(localEpisode.Series, () => localEpisode.Series).IsNotNull();
+
+            var destinationFilePath = BuildReviewPath(episodeFile, localEpisode);
+            EnsureReviewFolders(destinationFilePath);
+
+            var sourcePath = episodeFile.Path ?? localEpisode.Path;
+
+            if (!_diskProvider.FileExists(sourcePath))
+            {
+                throw new FileNotFoundException("Episode file path does not exist", sourcePath);
+            }
+
+            if (sourcePath.PathEquals(destinationFilePath))
+            {
+                throw new InvalidOperationException("Review destination is the same as the source file.");
+            }
+
+            if (_diskProvider.FileExists(destinationFilePath))
+            {
+                throw new DestinationAlreadyExistsException($"Destination {destinationFilePath} already exists.");
+            }
+
+            TransferMode mode;
+
+            if (copyOnly)
+            {
+                mode = _configService.CopyUsingHardlinks ? TransferMode.HardLinkOrCopy : TransferMode.Copy;
+                _logger.Debug("Copying episode file to review location: {0} to {1}", sourcePath, destinationFilePath);
+            }
+            else
+            {
+                mode = TransferMode.Move;
+                _logger.Debug("Moving episode file to review location: {0} to {1}", sourcePath, destinationFilePath);
+            }
+
+            _diskTransferService.TransferFile(sourcePath, destinationFilePath, mode);
+            _mediaFileAttributeService.SetFilePermissions(destinationFilePath);
+
+            return destinationFilePath;
+        }
+
+        private string BuildReviewPath(EpisodeFile episodeFile, LocalEpisode localEpisode)
+        {
+            var reviewRoot = _configService.ReviewLocation;
+
+            if (reviewRoot.IsNullOrWhiteSpace())
+            {
+                throw new InvalidOperationException("Review location is enabled but no folder is configured.");
+            }
+
+            if (!_diskProvider.FolderExists(reviewRoot))
+            {
+                throw new DirectoryNotFoundException($"Review location '{reviewRoot}' was not found.");
+            }
+
+            var series = localEpisode.Series;
+            var seriesFolderName = new OsPath(series.Path).Name;
+
+            if (seriesFolderName.IsNullOrWhiteSpace() || seriesFolderName is "/" or "\\")
+            {
+                throw new InvalidOperationException($"Series path '{series.Path}' does not have a folder name to use in the review location.");
+            }
+
+            var extension = Path.GetExtension(localEpisode.Path);
+            var libraryPath = _buildFileNames.BuildFilePath(localEpisode.Episodes, series, episodeFile, extension, null, localEpisode.CustomFormats);
+            var relativePath = series.Path.GetRelativePath(libraryPath);
+
+            return Path.Combine(reviewRoot, seriesFolderName, relativePath);
+        }
+
+        private void EnsureReviewFolders(string destinationFilePath)
+        {
+            var reviewRoot = _configService.ReviewLocation;
+
+            if (!reviewRoot.IsParentPath(destinationFilePath))
+            {
+                throw new InvalidOperationException($"Review destination '{destinationFilePath}' is outside '{reviewRoot}'.");
+            }
+
+            var missing = new Stack<string>();
+            var current = Path.GetDirectoryName(destinationFilePath);
+
+            while (current.IsNotNullOrWhiteSpace() &&
+                   !current.PathEquals(reviewRoot) &&
+                   !_diskProvider.FolderExists(current))
+            {
+                if (!reviewRoot.IsParentPath(current))
+                {
+                    break;
+                }
+
+                missing.Push(current);
+                current = current.GetParentPath();
+            }
+
+            while (missing.Count > 0)
+            {
+                var directory = missing.Pop();
+                _diskProvider.CreateFolder(directory);
+                _mediaFileAttributeService.SetFolderPermissions(directory);
+            }
         }
 
         private EpisodeFile TransferFile(EpisodeFile episodeFile, Series series, List<Episode> episodes, string destinationFilePath, TransferMode mode, LocalEpisode localEpisode = null)

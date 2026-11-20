@@ -128,6 +128,12 @@ namespace NzbDrone.Core.Download.History
                 return;
             }
 
+            if (message.ImportedEpisode == null)
+            {
+                // TODO: Round 3 records download history for the library file when a staged import is adopted.
+                return;
+            }
+
             var downloadId = message.DownloadId;
 
             // Try to find the downloadId if the user used manual import (from wanted: missing) or the

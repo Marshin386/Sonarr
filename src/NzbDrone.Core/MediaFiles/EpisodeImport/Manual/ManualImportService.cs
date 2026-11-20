@@ -599,10 +599,11 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
             }
 
             var untrackedImports = importedUntrackedDownload.Where(i => i.Result == ImportResultType.Imported).ToList();
+            var libraryUntrackedImports = untrackedImports.Where(i => i.EpisodeFile != null).ToList();
 
-            if (untrackedImports.Any())
+            if (libraryUntrackedImports.Any())
             {
-                foreach (var groupedUntrackedImport in untrackedImports.GroupBy(i => new { i.EpisodeFile.SeriesId, i.EpisodeFile.SeasonNumber }))
+                foreach (var groupedUntrackedImport in libraryUntrackedImports.GroupBy(i => new { i.EpisodeFile.SeriesId, i.EpisodeFile.SeasonNumber }))
                 {
                     var localEpisodes = groupedUntrackedImport.Select(u => u.ImportDecision.LocalEpisode).ToList();
                     var episodeFiles = groupedUntrackedImport.Select(u => u.EpisodeFile).ToList();
@@ -614,6 +615,12 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
 
                     _eventAggregator.PublishEvent(new UntrackedDownloadCompletedEvent(series, episodes, episodeFiles, parsedEpisodeInfo, sourcePath));
                 }
+            }
+
+            if (untrackedImports.Any(result => result.StagedForReview))
+            {
+                // TODO: Round 3 sends library notifications after the reviewed file is adopted.
+                _logger.Debug("Staged {0} manual import(s) for review. Skipping library notifications.", untrackedImports.Count(result => result.StagedForReview));
             }
 
             foreach (var groupedTrackedDownload in importedTrackedDownload.GroupBy(i => i.TrackedDownload.DownloadItem.DownloadId).ToList())
@@ -642,7 +649,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
 
                 if (allEpisodesImported)
                 {
-                    var episodeFiles = importedResults.Select(i => i.EpisodeFile).ToList();
+                    var episodeFiles = importedResults.Select(i => i.EpisodeFile).Where(file => file != null).ToList();
                     var importedEpisodes = importedResults.SelectMany(i => i.ImportDecision.LocalEpisode.Episodes).ToList();
 
                     trackedDownload.State = TrackedDownloadState.Imported;

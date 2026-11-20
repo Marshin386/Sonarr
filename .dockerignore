@@ -1,0 +1,11 @@
+.git
+.github
+_output
+_tests
+_temp
+**/.vs
+**/*.user
+**/bin
+**/obj
+**/node_modules
+node_modules

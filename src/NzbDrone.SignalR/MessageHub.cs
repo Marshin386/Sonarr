@@ -50,7 +50,10 @@ namespace NzbDrone.SignalR
                 Name = "version",
                 Body = new
                 {
-                    Version = BuildInfo.Version.ToString()
+                    // Must match initialize.json. AssemblyVersion is numeric (10.0.0.* in dev)
+                    // and cannot hold the fork suffix, so a mismatch makes the updated-version
+                    // modal reopen after every reload.
+                    Version = BuildInfo.VersionString
                 }
             };
 

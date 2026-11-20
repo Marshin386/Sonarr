@@ -323,6 +323,11 @@ namespace Sonarr.Api.V3.Series
         [NonAction]
         public void Handle(EpisodeImportedEvent message)
         {
+            if (message.ImportedEpisode == null)
+            {
+                return;
+            }
+
             BroadcastResourceChange(ModelAction.Updated, message.ImportedEpisode.SeriesId);
         }
 
