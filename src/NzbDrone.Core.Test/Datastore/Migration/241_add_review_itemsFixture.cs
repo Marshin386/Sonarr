@@ -55,14 +55,11 @@ namespace NzbDrone.Core.Test.Datastore.Migration
                     DateAdded = added
                 });
 
-            var review = db.QuerySingle(
-                @"SELECT ""SeriesId"" AS SeriesId, ""EpisodeIds"" AS EpisodeIds, ""ReviewPath"" AS ReviewPath, ""DownloadId"" AS DownloadId
-                  FROM ""ReviewItems""");
-
-            ((int)review.SeriesId).Should().Be(4);
-            ((string)review.EpisodeIds).Should().Be("[11,12]");
-            ((string)review.ReviewPath).Should().Be("/review/tv/Show Name/Season 01/Show Name - S01E01E02.mkv");
-            ((string)review.DownloadId).Should().Be("download-1");
+            db.QuerySingle<int>(@"SELECT ""SeriesId"" FROM ""ReviewItems""").Should().Be(4);
+            db.QuerySingle<string>(@"SELECT ""EpisodeIds"" FROM ""ReviewItems""").Should().Be("[11,12]");
+            db.QuerySingle<string>(@"SELECT ""ReviewPath"" FROM ""ReviewItems""")
+                .Should().Be("/review/tv/Show Name/Season 01/Show Name - S01E01E02.mkv");
+            db.QuerySingle<string>(@"SELECT ""DownloadId"" FROM ""ReviewItems""").Should().Be("download-1");
 
             var kept = db.QuerySingle<string>(@"SELECT ""RelativePath"" FROM ""KeptEpisodeFiles"" WHERE ""SeriesId"" = 4");
             kept.Should().Be("Season 01/Show Name - S01E01.old.mkv");

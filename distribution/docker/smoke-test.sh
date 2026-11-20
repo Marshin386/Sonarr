@@ -154,13 +154,18 @@ if ! curl -fsS http://127.0.0.1:8989/ping | grep -q '"status": *"OK"'; then
     exit 1
 fi
 
-ui_code="$(curl -sS -o /tmp/sonarr-ui.html -w '%{http_code}' http://127.0.0.1:8989/)"
+# Forms authentication is on by default, so / redirects to the login page.
+ui_code="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8989/)"
 echo "ui status: ${ui_code}"
-if [ "${ui_code}" != "200" ]; then
-    echo 'Sonarr web UI did not respond with HTTP 200' >&2
-    exit 1
-fi
+case "${ui_code}" in
+    200|302) ;;
+    *)
+        echo 'Sonarr web UI did not respond' >&2
+        exit 1
+        ;;
+esac
 
+curl -fsSL -o /tmp/sonarr-ui.html http://127.0.0.1:8989/
 if ! grep -qi sonarr /tmp/sonarr-ui.html; then
     echo 'Sonarr web UI response did not look like the Sonarr page' >&2
     exit 1

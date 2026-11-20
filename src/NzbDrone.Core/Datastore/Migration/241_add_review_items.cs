@@ -19,7 +19,7 @@ namespace NzbDrone.Core.Datastore.Migration
                   .WithColumn("IndexerFlags").AsInt32().NotNullable().WithDefaultValue(0)
                   .WithColumn("SceneName").AsString().Nullable()
                   .WithColumn("DownloadId").AsString().Nullable()
-                  .WithColumn("Added").AsDateTime().NotNullable();
+                  .WithColumn("Added").AsDateTimeOffset().NotNullable();
 
             Create.TableForModel("KeptEpisodeFiles")
                   .WithColumn("SeriesId").AsInt32().NotNullable()
@@ -29,7 +29,7 @@ namespace NzbDrone.Core.Datastore.Migration
                   .WithColumn("Languages").AsString().NotNullable()
                   .WithColumn("SceneName").AsString().Nullable()
                   .WithColumn("ReleaseGroup").AsString().Nullable()
-                  .WithColumn("DateAdded").AsDateTime().NotNullable();
+                  .WithColumn("DateAdded").AsDateTimeOffset().NotNullable();
 
             Create.Index()
                   .OnTable("KeptEpisodeFiles")
