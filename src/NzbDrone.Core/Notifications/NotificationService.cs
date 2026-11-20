@@ -182,7 +182,6 @@ namespace NzbDrone.Core.Notifications
 
             if (message.ImportedEpisode == null)
             {
-                // TODO: Round 3 sends OnDownload after the reviewed file is adopted into the series folder.
                 return;
             }
 
@@ -230,7 +229,6 @@ namespace NzbDrone.Core.Notifications
 
             if (destinationPaths.Count == 0)
             {
-                // TODO: Round 3 sends OnImportComplete after the reviewed file is adopted into the series folder.
                 _logger.Debug("Skipping OnImportComplete for {0}; the import has no library file yet", series?.Title);
                 return;
             }
@@ -283,7 +281,6 @@ namespace NzbDrone.Core.Notifications
 
             if (destinationPaths.Count == 0)
             {
-                // TODO: Round 3 sends OnImportComplete after the reviewed file is adopted into the series folder.
                 _logger.Debug("Skipping OnImportComplete for {0}; the import has no library file yet", series?.Title);
                 return;
             }

@@ -117,13 +117,29 @@ namespace NzbDrone.Core.MediaFiles
                 return;
             }
 
+            var changedEpisodeIds = new List<int>();
+
             foreach (var item in matches)
             {
-                DeleteFilesMatchingName(item.ReviewPath);
-                _repository.Delete(item.Id);
+                var recordedIds = item.EpisodeIds ?? new List<int>();
+                changedEpisodeIds.AddRange(recordedIds);
+
+                var remaining = recordedIds.Where(id => !ids.Contains(id)).Distinct().ToList();
+
+                if (remaining.Count == 0)
+                {
+                    // The whole file is being replaced. A multi-episode file stays until every episode is released.
+                    DeleteFilesMatchingName(item.ReviewPath);
+                    _repository.Delete(item.Id);
+                }
+                else
+                {
+                    item.EpisodeIds = remaining;
+                    _repository.Update(item);
+                }
             }
 
-            Publish(matches.SelectMany(item => item.EpisodeIds ?? new List<int>()));
+            Publish(changedEpisodeIds);
         }
 
         private void DeleteFilesMatchingName(string reviewPath)

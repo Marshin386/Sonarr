@@ -135,8 +135,8 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport
                     {
                         var episodeIds = localEpisode.Episodes.Select(episode => episode.Id).Distinct().ToList();
 
-                        // A new grab of an episode already in review replaces the staged file.
-                        // Tdarr may have changed the extension, so removal matches the name and ignores it.
+                        // Release only these episodes. A multi-episode review file keeps the
+                        // episodes that this grab does not replace, and its staged file.
                         _reviewItemService.RemoveForEpisodes(episodeIds);
 
                         var reviewPath = _episodeFileMover.StageEpisodeFile(episodeFile, localEpisode, copyOnly, true);
@@ -156,9 +156,8 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport
                             Added = DateTime.UtcNow
                         });
 
-                        // TODO: Round 3 adopts the file from the review folder into the series folder
-                        // (the extension may have changed), writes history, extras, and metadata, and
-                        // replaces the previous episode file. Until then a staged import has no EpisodeFile.
+                        // The library file, history, and notifications are written when a later
+                        // rescan adopts the rsync copy. A staged import has no EpisodeFile yet.
                         _logger.Info("Staged episode import for review at {0}", reviewPath);
                         importResults.Add(ImportResult.Staged(importDecision, reviewPath));
                         continue;
