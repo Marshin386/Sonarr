@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using NzbDrone.Core.CustomFormats;
 using NzbDrone.Core.Datastore;
 using NzbDrone.Core.DecisionEngine.Specifications;
+using NzbDrone.Core.MediaFiles;
 using NzbDrone.Core.Tv;
 using NzbDrone.SignalR;
 using Sonarr.Api.V5.Episodes;
@@ -22,8 +23,9 @@ public class CutoffController : EpisodeControllerWithSignalR
                         ISeriesService seriesService,
                         IUpgradableSpecification upgradableSpecification,
                         ICustomFormatCalculationService formatCalculator,
-                        IBroadcastSignalRMessage signalRBroadcaster)
-        : base(episodeService, seriesService, upgradableSpecification, formatCalculator, signalRBroadcaster)
+                        IBroadcastSignalRMessage signalRBroadcaster,
+                        IReviewItemService reviewItemService)
+        : base(episodeService, seriesService, upgradableSpecification, formatCalculator, signalRBroadcaster, reviewItemService)
     {
         _episodeCutoffService = episodeCutoffService;
     }

@@ -128,6 +128,9 @@ namespace NzbDrone.Core.Datastore
                             t => t.Id > 0)
                   .Ignore(f => f.Path);
 
+            Mapper.Entity<ReviewItem>("ReviewItems").RegisterModel();
+            Mapper.Entity<KeptEpisodeFile>("KeptEpisodeFiles").RegisterModel();
+
             Mapper.Entity<Episode>("Episodes").RegisterModel()
                   .Ignore(e => e.SeriesTitle)
                   .Ignore(e => e.Series)

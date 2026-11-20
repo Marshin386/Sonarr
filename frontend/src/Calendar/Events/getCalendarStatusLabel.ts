@@ -4,6 +4,7 @@ import translate from 'Utilities/String/translate';
 const statusTranslationKeys: Record<CalendarStatus, string> = {
   downloaded: 'CalendarLegendEpisodeDownloadedTooltip',
   downloading: 'CalendarLegendEpisodeDownloadingTooltip',
+  inReview: 'CalendarLegendEpisodeInReviewTooltip',
   unmonitored: 'CalendarLegendEpisodeUnmonitoredTooltip',
   onAir: 'CalendarLegendEpisodeOnAirTooltip',
   missing: 'CalendarLegendEpisodeMissingTooltip',

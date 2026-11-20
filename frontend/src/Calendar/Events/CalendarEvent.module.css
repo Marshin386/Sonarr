@@ -116,6 +116,20 @@
   }
 }
 
+.inReview {
+  &::before {
+    background-color: var(--calendarInReviewColor);
+  }
+
+  &:global(.fullColor) {
+    background-color: color-mix(in oklch, var(--calendarInReviewColor) 16%, transparent);
+
+    &:hover {
+      background-color: color-mix(in oklch, var(--calendarInReviewColor) 26%, transparent);
+    }
+  }
+}
+
 .downloading {
   &::before {
     background-color: var(--calendarDownloadingColor);

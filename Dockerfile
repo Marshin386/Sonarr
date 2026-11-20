@@ -1,0 +1,147 @@
+# syntax=docker/dockerfile:1
+# Multi-arch image for the Marshin386 Sonarr fork (review location).
+# linux/amd64 and linux/arm64. Listens on 8989, app data in /config.
+
+FROM --platform=$BUILDPLATFORM node:24-bookworm AS ui
+WORKDIR /src
+COPY package.json yarn.lock .yarnrc tsconfig.json vite.config.ts index.html ./
+COPY frontend ./frontend
+RUN corepack enable \
+    && corepack prepare yarn@1.22.22 --activate \
+    && yarn install --frozen-lockfile --network-timeout 120000 \
+    && yarn build
+
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG TARGETARCH
+WORKDIR /src
+COPY . .
+COPY --from=ui /src/_output/UI /tmp/UI
+# Upstream build.sh replaces AssemblyVersion (the 10.0.0.* dev placeholder) before
+# publish. System.Version cannot store 5.9.1-review.1, so the numeric assembly
+# version is 5.9.1.1 and InformationalVersion carries the fork string the UI shows.
+RUN set -eu; \
+    FORK_VERSION="$(tr -d '[:space:]' < distribution/fork-version)"; \
+    ASSEMBLY_VERSION="$(printf '%s\n' "${FORK_VERSION}" | sed -nE 's/^([0-9]+\.[0-9]+\.[0-9]+)-[A-Za-z0-9]+\.([0-9]+)$/\1.\2/p')"; \
+    if [ -z "${ASSEMBLY_VERSION}" ]; then \
+        echo "distribution/fork-version must look like 5.9.1-review.1" >&2; \
+        exit 1; \
+    fi; \
+    case "${TARGETARCH}" in \
+        amd64) RID=linux-x64 ;; \
+        arm64) RID=linux-arm64 ;; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    dotnet publish src/NzbDrone.Console/Sonarr.Console.csproj \
+        -c Release \
+        -f net10.0 \
+        -r "${RID}" \
+        --self-contained true \
+        -p:EnableAnalyzers=false \
+        -p:AssemblyVersion="${ASSEMBLY_VERSION}" \
+        -p:FileVersion="${ASSEMBLY_VERSION}" \
+        -p:Version="${ASSEMBLY_VERSION}" \
+        -p:InformationalVersion="${FORK_VERSION}" \
+        -p:IncludeSourceRevisionInInformationalVersion=false \
+        -o /out/bin; \
+    dotnet publish src/NzbDrone.Mono/Sonarr.Mono.csproj \
+        -c Release \
+        -f net10.0 \
+        -r "${RID}" \
+        --self-contained true \
+        -p:EnableAnalyzers=false \
+        -p:AssemblyVersion="${ASSEMBLY_VERSION}" \
+        -p:FileVersion="${ASSEMBLY_VERSION}" \
+        -p:Version="${ASSEMBLY_VERSION}" \
+        -p:InformationalVersion="${FORK_VERSION}" \
+        -p:IncludeSourceRevisionInInformationalVersion=false \
+        -o /tmp/mono \
+    && find /tmp/mono -maxdepth 1 \( \
+        -name 'Sonarr.Mono.dll' -o \
+        -name 'Sonarr.Mono.pdb' -o \
+        -name 'Openur.Mono.Unix.*' -o \
+        -name 'libMono.Unix.*' -o \
+        -name 'Mono.Unix.*' \
+       \) -exec cp -a {} /out/bin/ \; \
+    && test -s /out/bin/Sonarr.Mono.dll \
+    && cp -a /tmp/UI /out/bin/UI \
+    && printf 'ReleaseVersion=%s\n' "${FORK_VERSION}" > /out/bin/release_info \
+    && printf 'PackageVersion=%s\nPackageAuthor=Marshin386\nUpdateMethod=Docker\nPackageGlobalMessage=Marshin386 Sonarr fork %s (review location). Updates are delivered by replacing this image.\n' \
+        "${FORK_VERSION}" "${FORK_VERSION}" > /out/package_info \
+    && chmod +x /out/bin/Sonarr
+
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0
+ARG TARGETARCH
+# gosu is not in Ubuntu main. Pin the upstream binary and check its checksum.
+ARG GOSU_VERSION=1.20
+RUN set -eux; \
+    printf 'nameserver 8.8.8.8\nnameserver 1.1.1.1\n' > /etc/resolv.conf || true; \
+    if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
+        sed -i -E 's/^([[:space:]]*Components:).*/\1 main universe/' /etc/apt/sources.list.d/ubuntu.sources; \
+    fi; \
+    if [ -f /etc/apt/sources.list ]; then \
+        sed -i -E 's/[[:space:]]main$/ main universe/' /etc/apt/sources.list; \
+    fi; \
+    printf 'Acquire::Retries "5";\n' > /etc/apt/apt.conf.d/80-retries; \
+    try=0; \
+    while true; do \
+        if apt-get update -o APT::Update::Error-Mode=any \
+            && apt-get install -y --no-install-recommends \
+                ca-certificates \
+                curl \
+                ffmpeg \
+                libsqlite3-0 \
+                mediainfo \
+                tzdata; then \
+            break; \
+        fi; \
+        try=$((try + 1)); \
+        if [ "${try}" -ge 5 ]; then \
+            echo "apt-get failed" >&2; \
+            exit 1; \
+        fi; \
+        sleep 20; \
+    done; \
+    case "${TARGETARCH}" in \
+        amd64) gosu_sha=b1892636c281590f34bc63c1118f058cd9de66c4ea463772e3909672d8b302ac ;; \
+        arm64) gosu_sha=c216cb762520edb5ab0acb21cb9bc4bcc5f1544d365e8952a21514f04ea233ee ;; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}"; \
+    echo "${gosu_sha}  /usr/local/bin/gosu" | sha256sum -c -; \
+    chmod 0755 /usr/local/bin/gosu; \
+    gosu --version; \
+    rm -rf /var/lib/apt/lists/*
+
+COPY distribution/docker/entrypoint.sh /entrypoint.sh
+COPY --from=build /out/bin /app/sonarr/bin
+COPY --from=build /out/package_info /app/sonarr/package_info
+# Openur.FFprobeStatic stores ffprobe as zip mode 0644 for every RID, including
+# linux-x64 and linux-arm64. NuGet on Linux ignores that mode and creates each
+# extracted file with creat(0766). The SDK umask 022 turns 0766 into 0744
+# (rwxr--r--), so only root can execute ffprobe. Sonarr runs as PUID and looks
+# for ffprobe beside the app.
+# chmod 755 the known binaries first so a 0644 ffprobe is fixed too, then give
+# every other file read access and every directory or already-executable file
+# access for users other than root.
+RUN set -eu; \
+    chmod 755 /entrypoint.sh /app/sonarr/bin/Sonarr /app/sonarr/bin/ffprobe; \
+    find /app -type d -exec chmod a+rx {} +; \
+    find /app -type f -exec chmod a+r {} +; \
+    find /app -type f -perm /111 -exec chmod a+x {} +; \
+    test -x /app/sonarr/bin/Sonarr; \
+    test -x /app/sonarr/bin/ffprobe; \
+    test -r /app/sonarr/package_info; \
+    test -d /app/sonarr/bin/UI; \
+    mkdir -p /config; \
+    chmod 755 /config
+
+ENV PUID=1000 \
+    PGID=1000 \
+    TZ=Etc/UTC \
+    UMASK=022
+
+EXPOSE 8989
+VOLUME /config
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fsS http://127.0.0.1:8989/ping || exit 1
+ENTRYPOINT ["/entrypoint.sh"]

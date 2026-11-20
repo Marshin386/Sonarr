@@ -244,7 +244,10 @@ namespace NzbDrone.Core.Download
                 _eventAggregator.PublishEvent(new DownloadCompletedEvent(trackedDownload,
                     trackedDownload.RemoteEpisode.Series,
                     trackedDownload.RemoteEpisode.Episodes,
-                    importResults.Where(c => c.Result == ImportResultType.Imported).Select(c => c.EpisodeFile).ToList(),
+                    importResults.Where(c => c.Result == ImportResultType.Imported)
+                                  .Select(c => c.EpisodeFile)
+                                  .Where(file => file != null)
+                                  .ToList(),
                     releaseInfo));
 
                 return true;

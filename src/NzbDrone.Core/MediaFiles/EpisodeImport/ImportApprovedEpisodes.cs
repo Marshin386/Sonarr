@@ -4,6 +4,7 @@ using System.Linq;
 using NLog;
 using NzbDrone.Common.Disk;
 using NzbDrone.Common.Extensions;
+using NzbDrone.Core.Configuration;
 using NzbDrone.Core.Download;
 using NzbDrone.Core.Extras;
 using NzbDrone.Core.History;
@@ -24,33 +25,42 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport
     public class ImportApprovedEpisodes : IImportApprovedEpisodes
     {
         private readonly IUpgradeMediaFiles _episodeFileUpgrader;
+        private readonly IMoveEpisodeFiles _episodeFileMover;
         private readonly IMediaFileService _mediaFileService;
+        private readonly IReviewItemService _reviewItemService;
         private readonly IExtraService _extraService;
         private readonly IExistingExtraFiles _existingExtraFiles;
         private readonly IDiskProvider _diskProvider;
         private readonly IHistoryService _historyService;
         private readonly IEventAggregator _eventAggregator;
         private readonly IManageCommandQueue _commandQueueManager;
+        private readonly IConfigService _configService;
         private readonly Logger _logger;
 
         public ImportApprovedEpisodes(IUpgradeMediaFiles episodeFileUpgrader,
+                                      IMoveEpisodeFiles episodeFileMover,
                                       IMediaFileService mediaFileService,
+                                      IReviewItemService reviewItemService,
                                       IExtraService extraService,
                                       IExistingExtraFiles existingExtraFiles,
                                       IDiskProvider diskProvider,
                                       IHistoryService historyService,
                                       IEventAggregator eventAggregator,
                                       IManageCommandQueue commandQueueManager,
+                                      IConfigService configService,
                                       Logger logger)
         {
             _episodeFileUpgrader = episodeFileUpgrader;
+            _episodeFileMover = episodeFileMover;
             _mediaFileService = mediaFileService;
+            _reviewItemService = reviewItemService;
             _extraService = extraService;
             _existingExtraFiles = existingExtraFiles;
             _diskProvider = diskProvider;
             _historyService = historyService;
             _eventAggregator = eventAggregator;
             _commandQueueManager = commandQueueManager;
+            _configService = configService;
             _logger = logger;
         }
 
@@ -119,6 +129,38 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport
                         case ImportMode.Copy:
                             copyOnly = true;
                             break;
+                    }
+
+                    if (ShouldStageForReview(localEpisode))
+                    {
+                        var episodeIds = localEpisode.Episodes.Select(episode => episode.Id).Distinct().ToList();
+
+                        // Release only these episodes. A multi-episode review file keeps the
+                        // episodes that this grab does not replace, and its staged file.
+                        _reviewItemService.RemoveForEpisodes(episodeIds);
+
+                        var reviewPath = _episodeFileMover.StageEpisodeFile(episodeFile, localEpisode, copyOnly, true);
+
+                        _reviewItemService.Add(new ReviewItem
+                        {
+                            SeriesId = localEpisode.Series.Id,
+                            EpisodeIds = localEpisode.Episodes.Select(episode => episode.Id).Distinct().ToList(),
+                            ReviewPath = reviewPath,
+                            Quality = episodeFile.Quality,
+                            Languages = episodeFile.Languages ?? [],
+                            ReleaseGroup = episodeFile.ReleaseGroup,
+                            ReleaseType = episodeFile.ReleaseType,
+                            IndexerFlags = episodeFile.IndexerFlags,
+                            SceneName = episodeFile.SceneName,
+                            DownloadId = downloadClientItem?.DownloadId,
+                            Added = DateTime.UtcNow
+                        });
+
+                        // The library file, history, and notifications are written when a later
+                        // rescan adopts the rsync copy. A staged import has no EpisodeFile yet.
+                        _logger.Info("Staged episode import for review at {0}", reviewPath);
+                        importResults.Add(ImportResult.Staged(importDecision, reviewPath));
+                        continue;
                     }
 
                     if (newDownload)
@@ -209,6 +251,24 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport
                                             .Select(d => new ImportResult(d, d.Rejections.Select(r => r.Message).ToArray())));
 
             return importResults;
+        }
+
+        private bool ShouldStageForReview(LocalEpisode localEpisode)
+        {
+            if (!_configService.ReviewLocationEnabled)
+            {
+                return false;
+            }
+
+            // Files already inside the series folder are library scans or in-place imports.
+            // Leave those on the normal import path so a later adoption rescan can match them.
+            if (localEpisode.Series?.Path.IsNotNullOrWhiteSpace() == true &&
+                localEpisode.Series.Path.IsParentPath(localEpisode.Path))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

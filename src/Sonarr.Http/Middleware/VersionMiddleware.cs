@@ -9,7 +9,7 @@ namespace Sonarr.Http.Middleware
     {
         private const string VERSIONHEADER = "X-Application-Version";
 
-        private static readonly string Version = BuildInfo.Version.ToString();
+        private static readonly string Version = BuildInfo.VersionString;
 
         private readonly RequestDelegate _next;
 

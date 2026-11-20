@@ -160,6 +160,26 @@ namespace NzbDrone.Core.Test.TvTests.EpisodeRepositoryTests
         }
 
         [Test]
+        public void should_exclude_episodes_that_are_in_review()
+        {
+            GivenMonitoredFilterExpression();
+
+            var episode = Subject.EpisodesWhereCutoffUnmet(_pagingSpec, _qualitiesBelowCutoff, false).Records.Single();
+
+            Db.Insert(new ReviewItem
+            {
+                SeriesId = episode.SeriesId,
+                EpisodeIds = new List<int> { episode.Id },
+                ReviewPath = "/review/tv/Show Name/Season 01/Show.mkv",
+                Quality = new QualityModel(Quality.SDTV),
+                Languages = new List<Language> { Language.English },
+                Added = DateTime.UtcNow
+            });
+
+            Subject.EpisodesWhereCutoffUnmet(_pagingSpec, _qualitiesBelowCutoff, false).Records.Should().BeEmpty();
+        }
+
+        [Test]
         public void should_only_contain_monitored_episodes()
         {
             GivenMonitoredFilterExpression();

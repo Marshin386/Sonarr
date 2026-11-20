@@ -35,6 +35,7 @@ interface CalendarEventProps {
   unverifiedSceneNumbering?: boolean;
   finaleType?: string;
   hasFile: boolean;
+  inReview?: boolean;
   grabbed?: boolean;
   onEventModalOpenToggle: (isOpen: boolean) => void;
 }
@@ -53,6 +54,7 @@ function CalendarEvent(props: CalendarEventProps) {
     unverifiedSceneNumbering,
     finaleType,
     hasFile,
+    inReview,
     grabbed,
     onEventModalOpenToggle,
   } = props;
@@ -96,7 +98,8 @@ function CalendarEvent(props: CalendarEventProps) {
     isDownloading,
     startTime,
     endTime,
-    isMonitored
+    isMonitored,
+    inReview
   );
   const missingAbsoluteNumber =
     series.seriesType === 'anime' && seasonNumber > 0 && !absoluteEpisodeNumber;

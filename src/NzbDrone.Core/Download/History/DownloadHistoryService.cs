@@ -128,6 +128,11 @@ namespace NzbDrone.Core.Download.History
                 return;
             }
 
+            if (message.ImportedEpisode == null || message.DownloadClientInfo == null)
+            {
+                return;
+            }
+
             var downloadId = message.DownloadId;
 
             // Try to find the downloadId if the user used manual import (from wanted: missing) or the

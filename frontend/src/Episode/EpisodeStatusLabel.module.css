@@ -1,5 +1,6 @@
 .downloaded,
 .downloading,
+.inReview,
 .onAir,
 .missing,
 .unaired {
@@ -16,6 +17,15 @@
 
 .downloading {
   --labelKindColor: var(--calendarDownloadingColor);
+}
+
+.inReview {
+  --labelKindColor: var(--calendarInReviewColor);
+}
+
+.path {
+  margin-bottom: 8px;
+  word-break: break-all;
 }
 
 .onAir {

@@ -20,7 +20,9 @@ public class MediaManagementSettingsController : SettingsController<MediaManagem
         StartupFolderValidator startupFolderValidator,
         SystemFolderValidator systemFolderValidator,
         RootFolderAncestorValidator rootFolderAncestorValidator,
-        RootFolderValidator rootFolderValidator)
+        RootFolderValidator rootFolderValidator,
+        MappedNetworkDriveValidator mappedNetworkDriveValidator,
+        RecycleBinValidator recycleBinValidator)
         : base(configFileProvider, configService)
     {
         SharedValidator.RuleFor(c => c.RecycleBinCleanupDays).Cascade(CascadeMode.Stop)
@@ -40,6 +42,21 @@ public class MediaManagementSettingsController : SettingsController<MediaManagem
                                                   .When(c => !string.IsNullOrWhiteSpace(c.RecycleBin));
 
         SharedValidator.RuleFor(c => c.ScriptImportPath).IsValidPath().When(c => c.UseScriptImport);
+
+        SharedValidator.RuleFor(c => c.ReviewLocation)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .IsValidPath()
+            .SetValidator(folderWritableValidator)
+            .SetValidator(pathExistsValidator)
+            .SetValidator(rootFolderValidator)
+            .SetValidator(mappedNetworkDriveValidator)
+            .SetValidator(startupFolderValidator)
+            .SetValidator(systemFolderValidator)
+            .SetValidator(recycleBinValidator)
+            .SetValidator(rootFolderAncestorValidator)
+            .SetValidator(seriesPathValidator)
+            .When(c => c.ReviewLocationEnabled);
 
         SharedValidator.RuleFor(c => c.MinimumFreeSpaceWhenImporting).Cascade(CascadeMode.Stop)
             .NotNull()
