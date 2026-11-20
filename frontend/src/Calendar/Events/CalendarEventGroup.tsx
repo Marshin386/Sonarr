@@ -58,38 +58,49 @@ function CalendarEventGroup({
   const endTime = moment(lastEpisode.airDateUtc).add(series.runtime, 'minutes');
   const seasonNumber = firstEpisode.seasonNumber;
 
-  const { allDownloaded, anyGrabbed, anyMonitored, allAbsoluteEpisodeNumbers } =
-    useMemo(() => {
-      let files = 0;
-      let grabbed = 0;
-      let monitored = 0;
-      let absoluteEpisodeNumbers = 0;
+  const {
+    allDownloaded,
+    anyGrabbed,
+    anyInReview,
+    anyMonitored,
+    allAbsoluteEpisodeNumbers,
+  } = useMemo(() => {
+    let files = 0;
+    let grabbed = 0;
+    let inReview = 0;
+    let monitored = 0;
+    let absoluteEpisodeNumbers = 0;
 
-      events.forEach((event) => {
-        if (event.episodeFileId) {
-          files++;
-        }
+    events.forEach((event) => {
+      if (event.episodeFileId) {
+        files++;
+      }
 
-        if (event.grabbed) {
-          grabbed++;
-        }
+      if (event.grabbed) {
+        grabbed++;
+      }
 
-        if (series.monitored && event.monitored) {
-          monitored++;
-        }
+      if (event.inReview) {
+        inReview++;
+      }
 
-        if (event.absoluteEpisodeNumber) {
-          absoluteEpisodeNumbers++;
-        }
-      });
+      if (series.monitored && event.monitored) {
+        monitored++;
+      }
 
-      return {
-        allDownloaded: files === events.length,
-        anyGrabbed: grabbed > 0,
-        anyMonitored: monitored > 0,
-        allAbsoluteEpisodeNumbers: absoluteEpisodeNumbers === events.length,
-      };
-    }, [series, events]);
+      if (event.absoluteEpisodeNumber) {
+        absoluteEpisodeNumbers++;
+      }
+    });
+
+    return {
+      allDownloaded: files === events.length,
+      anyGrabbed: grabbed > 0,
+      anyInReview: inReview > 0,
+      anyMonitored: monitored > 0,
+      allAbsoluteEpisodeNumbers: absoluteEpisodeNumbers === events.length,
+    };
+  }, [series, events]);
 
   const anyDownloading = isDownloading || anyGrabbed;
 
@@ -98,7 +109,8 @@ function CalendarEventGroup({
     anyDownloading,
     startTime,
     endTime,
-    anyMonitored
+    anyMonitored,
+    anyInReview
   );
   const isMissingAbsoluteNumber =
     series.seriesType === 'anime' &&

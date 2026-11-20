@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using NzbDrone.Common.Extensions;
 using NzbDrone.Core.CustomFormats;
 using NzbDrone.Core.DecisionEngine.Specifications;
+using NzbDrone.Core.MediaFiles;
+using NzbDrone.Core.MediaFiles.Events;
+using NzbDrone.Core.Messaging.Events;
 using NzbDrone.Core.Tags;
 using NzbDrone.Core.Tv;
 using NzbDrone.SignalR;
@@ -13,7 +16,7 @@ using Sonarr.Http;
 namespace Sonarr.Api.V5.Calendar
 {
     [V5ApiController]
-    public class CalendarController : EpisodeControllerWithSignalR
+    public class CalendarController : EpisodeControllerWithSignalR, IHandle<ReviewItemsChangedEvent>
     {
         private readonly ITagService _tagService;
 
@@ -22,10 +25,17 @@ namespace Sonarr.Api.V5.Calendar
                             ISeriesService seriesService,
                             IUpgradableSpecification qualityUpgradableSpecification,
                             ITagService tagService,
-                            ICustomFormatCalculationService formatCalculator)
-            : base(episodeService, seriesService, qualityUpgradableSpecification, formatCalculator, signalR)
+                            ICustomFormatCalculationService formatCalculator,
+                            IReviewItemService reviewItemService)
+            : base(episodeService, seriesService, qualityUpgradableSpecification, formatCalculator, signalR, reviewItemService)
         {
             _tagService = tagService;
+        }
+
+        [NonAction]
+        public void Handle(ReviewItemsChangedEvent message)
+        {
+            BroadcastReviewChanges(message);
         }
 
         [HttpGet]

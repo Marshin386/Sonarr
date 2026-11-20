@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQueueDetailsForSeries } from 'Activity/Queue/Details/QueueDetailsProvider';
 import Label from 'Components/Label';
+import { useInReviewCounts } from 'Episode/useReviewItems';
 import { icons, kinds, sizes } from 'Helpers/Props';
 import { Kind } from 'Helpers/Props/kinds';
 
@@ -62,17 +63,19 @@ function SeasonProgressLabel({
   episodeFileCount,
 }: SeasonProgressLabelProps) {
   const queueDetails = useQueueDetailsForSeries(seriesId, seasonNumber);
+  const inReview = useInReviewCounts(seriesId, seasonNumber);
 
   const newDownloads = queueDetails.count - queueDetails.episodesWithFiles;
-  const text = newDownloads
-    ? `${episodeFileCount} + ${newDownloads} / ${episodeCount}`
+  const extra = newDownloads + inReview.pendingCount;
+  const text = extra
+    ? `${episodeFileCount} + ${extra} / ${episodeCount}`
     : `${episodeFileCount} / ${episodeCount}`;
 
   const kind = getEpisodeCountKind(
     monitored,
     episodeFileCount,
     episodeCount,
-    queueDetails.count > 0
+    queueDetails.count > 0 || inReview.any
   );
 
   return (

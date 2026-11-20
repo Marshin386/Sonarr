@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useQueueDetailsForSeries } from 'Activity/Queue/Details/QueueDetailsProvider';
 import ProgressBar from 'Components/ProgressBar';
+import { useInReviewCounts } from 'Episode/useReviewItems';
 import { sizes } from 'Helpers/Props';
 import { SeriesStatus } from 'Series/Series';
 import getProgressBarKind from 'Utilities/Series/getProgressBarKind';
@@ -35,6 +36,7 @@ function SeriesIndexProgressBar(props: SeriesIndexProgressBarProps) {
   } = props;
 
   const queueDetails = useQueueDetailsForSeries(seriesId, seasonNumber);
+  const inReview = useInReviewCounts(seriesId, seasonNumber);
 
   const containerClassName = useMemo(() => {
     if (isStandalone) {
@@ -49,9 +51,10 @@ function SeriesIndexProgressBar(props: SeriesIndexProgressBarProps) {
   }, [isStandalone, detailedProgressBar]);
 
   const newDownloads = queueDetails.count - queueDetails.episodesWithFiles;
+  const extra = newDownloads + inReview.pendingCount;
   const progress = episodeCount ? (episodeFileCount / episodeCount) * 100 : 100;
-  const text = newDownloads
-    ? `${episodeFileCount} + ${newDownloads} / ${episodeCount}`
+  const text = extra
+    ? `${episodeFileCount} + ${extra} / ${episodeCount}`
     : `${episodeFileCount} / ${episodeCount}`;
 
   return (
@@ -65,7 +68,7 @@ function SeriesIndexProgressBar(props: SeriesIndexProgressBarProps) {
         status,
         monitored,
         progress,
-        queueDetails.count > 0
+        queueDetails.count > 0 || inReview.any
       )}
       size={detailedProgressBar ? sizes.MEDIUM : sizes.SMALL}
       showText={detailedProgressBar}
@@ -74,7 +77,7 @@ function SeriesIndexProgressBar(props: SeriesIndexProgressBarProps) {
         episodeFileCount,
         episodeCount,
         totalEpisodeCount,
-        downloadingCount: queueDetails.count,
+        downloadingCount: queueDetails.count + inReview.count,
       })}
       width={width}
     />

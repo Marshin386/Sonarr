@@ -22,7 +22,7 @@ namespace NzbDrone.Core.MediaFiles
         EpisodeFile MoveEpisodeFile(EpisodeFile episodeFile, Series series);
         EpisodeFile MoveEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode);
         EpisodeFile CopyEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode);
-        string StageEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode, bool copyOnly);
+        string StageEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode, bool copyOnly, bool replaceExisting);
     }
 
     public class EpisodeFileMovingService : IMoveEpisodeFiles
@@ -108,7 +108,7 @@ namespace NzbDrone.Core.MediaFiles
             return TransferFile(episodeFile, localEpisode.Series, localEpisode.Episodes, filePath, TransferMode.Copy, localEpisode);
         }
 
-        public string StageEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode, bool copyOnly)
+        public string StageEpisodeFile(EpisodeFile episodeFile, LocalEpisode localEpisode, bool copyOnly, bool replaceExisting)
         {
             Ensure.That(episodeFile, () => episodeFile).IsNotNull();
             Ensure.That(localEpisode, () => localEpisode).IsNotNull();
@@ -131,7 +131,13 @@ namespace NzbDrone.Core.MediaFiles
 
             if (_diskProvider.FileExists(destinationFilePath))
             {
-                throw new DestinationAlreadyExistsException($"Destination {destinationFilePath} already exists.");
+                if (!replaceExisting)
+                {
+                    throw new DestinationAlreadyExistsException($"Destination {destinationFilePath} already exists.");
+                }
+
+                _logger.Debug("Replacing existing review file: {0}", destinationFilePath);
+                _diskProvider.DeleteFile(destinationFilePath);
             }
 
             TransferMode mode;

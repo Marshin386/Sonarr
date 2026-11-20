@@ -44,6 +44,10 @@
     background-color: var(--calendarDownloadingColor);
   }
 
+  &.inReview {
+    background-color: var(--calendarInReviewColor);
+  }
+
   &.unmonitored {
     background-color: var(--inkMuted);
     opacity: 0.5;

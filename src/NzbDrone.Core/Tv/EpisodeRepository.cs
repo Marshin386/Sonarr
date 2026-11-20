@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.Json;
 using Dapper;
 using NLog;
 using NzbDrone.Core.Datastore;
@@ -300,6 +301,8 @@ namespace NzbDrone.Core.Tv
                 builder = builder.Where(BuildSeriesTagsWhereClause(seriesTags));
             }
 
+            ExcludeEpisodesInReview(builder);
+
             return builder;
         }
 
@@ -336,6 +339,8 @@ namespace NzbDrone.Core.Tv
                 builder = builder.Where(BuildQualityFilterWhereClause(qualities));
             }
 
+            ExcludeEpisodesInReview(builder);
+
             builder = builder
                 .GroupBy<Episode>(e => e.Id)
                 .GroupBy<Series>(s => s.Id);
@@ -353,6 +358,45 @@ namespace NzbDrone.Core.Tv
             }
 
             return builder;
+        }
+
+        private void ExcludeEpisodesInReview(SqlBuilder builder)
+        {
+            List<string> rows;
+
+            using (var conn = _database.OpenConnection())
+            {
+                rows = conn.Query<string>("SELECT \"EpisodeIds\" FROM \"ReviewItems\"").ToList();
+            }
+
+            var ids = new HashSet<int>();
+
+            foreach (var row in rows)
+            {
+                if (string.IsNullOrWhiteSpace(row))
+                {
+                    continue;
+                }
+
+                var parsed = JsonSerializer.Deserialize<List<int>>(row);
+
+                if (parsed == null)
+                {
+                    continue;
+                }
+
+                foreach (var id in parsed)
+                {
+                    ids.Add(id);
+                }
+            }
+
+            if (ids.Count == 0)
+            {
+                return;
+            }
+
+            builder.Where($"\"Episodes\".\"Id\" NOT IN ({string.Join(",", ids)})");
         }
 
         private string BuildQualityCutoffWhereClause(List<QualitiesBelowCutoff> qualitiesBelowCutoff)

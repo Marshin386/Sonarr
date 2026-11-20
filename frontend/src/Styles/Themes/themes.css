@@ -40,6 +40,7 @@
   --warningColor: oklch(74% 0.145 75);
   --infoColor: oklch(50% 0.130 215);
   --purple: oklch(54% 0.200 305);
+  --indigo: #5c6bc0;
   --pink: oklch(74% 0.180 0);
   --sonarrBlue: oklch(78% 0.130 215);
   --helpTextColor: oklch(52% 0.010 260);
@@ -172,6 +173,7 @@
   --calendarTodayColor: oklch(56% 0.130 215);
   --calendarDownloadedColor: oklch(62% 0.170 148);
   --calendarDownloadingColor: var(--purple);
+  --calendarInReviewColor: var(--indigo);
   --calendarOnAirColor: oklch(76% 0.140 84);
   --calendarMissingColor: oklch(56% 0.170 22);
   --calendarUnairedColor: oklch(60% 0.095 255);
@@ -262,6 +264,7 @@
   --warningColor: oklch(82% 0.150 80);
   --infoColor: oklch(82% 0.115 215);
   --purple: oklch(58% 0.190 305);
+  --indigo: #7986cb;
   --pink: oklch(74% 0.180 0);
   --sonarrBlue: oklch(82% 0.115 215);
   --helpTextColor: oklch(66% 0.011 260);

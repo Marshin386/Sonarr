@@ -9,6 +9,7 @@ namespace NzbDrone.Core.MediaFiles
     {
         List<ReviewItem> GetBySeries(int seriesId);
         List<ReviewItem> FindByDownloadId(string downloadId);
+        HashSet<int> GetEpisodeIds();
     }
 
     public class ReviewItemRepository : BasicRepository<ReviewItem>, IReviewItemRepository
@@ -26,6 +27,14 @@ namespace NzbDrone.Core.MediaFiles
         public List<ReviewItem> FindByDownloadId(string downloadId)
         {
             return Query(item => item.DownloadId == downloadId).ToList();
+        }
+
+        public HashSet<int> GetEpisodeIds()
+        {
+            return All()
+                .Where(item => item.EpisodeIds != null)
+                .SelectMany(item => item.EpisodeIds)
+                .ToHashSet();
         }
     }
 }

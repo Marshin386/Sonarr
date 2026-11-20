@@ -24,6 +24,9 @@ namespace Sonarr.Api.V5.Episodes
         public string? Overview { get; set; }
         public EpisodeFileResource? EpisodeFile { get; set; }
         public bool HasFile { get; set; }
+        public bool InReview { get; set; }
+        public string? ReviewPath { get; set; }
+        public int? ReviewItemId { get; set; }
         public bool Monitored { get; set; }
         public int? AbsoluteEpisodeNumber { get; set; }
         public int? SceneAbsoluteEpisodeNumber { get; set; }

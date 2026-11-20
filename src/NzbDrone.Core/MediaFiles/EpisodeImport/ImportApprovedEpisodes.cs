@@ -133,7 +133,13 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport
 
                     if (ShouldStageForReview(localEpisode))
                     {
-                        var reviewPath = _episodeFileMover.StageEpisodeFile(episodeFile, localEpisode, copyOnly);
+                        var episodeIds = localEpisode.Episodes.Select(episode => episode.Id).Distinct().ToList();
+
+                        // A new grab of an episode already in review replaces the staged file.
+                        // Tdarr may have changed the extension, so removal matches the name and ignores it.
+                        _reviewItemService.RemoveForEpisodes(episodeIds);
+
+                        var reviewPath = _episodeFileMover.StageEpisodeFile(episodeFile, localEpisode, copyOnly, true);
 
                         _reviewItemService.Add(new ReviewItem
                         {

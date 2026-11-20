@@ -81,7 +81,7 @@ namespace NzbDrone.Core.Test.MediaFiles.EpisodeFileMovingServiceTests
             var expected = Path.Combine(_reviewRoot, "Show Name", "Season 01", "Show Name - S01E01.mkv");
             GivenLibraryPath(libraryPath);
 
-            var result = Subject.StageEpisodeFile(_episodeFile, _localEpisode, false);
+            var result = Subject.StageEpisodeFile(_episodeFile, _localEpisode, false, false);
 
             result.Should().Be(expected);
 
@@ -111,7 +111,7 @@ namespace NzbDrone.Core.Test.MediaFiles.EpisodeFileMovingServiceTests
             var expected = Path.Combine(_reviewRoot, "Show Name", "Show Name - S01E01.mkv");
             GivenLibraryPath(libraryPath);
 
-            Subject.StageEpisodeFile(_episodeFile, _localEpisode, false).Should().Be(expected);
+            Subject.StageEpisodeFile(_episodeFile, _localEpisode, false, false).Should().Be(expected);
 
             Mocker.GetMock<IDiskProvider>()
                   .Verify(disk => disk.CreateFolder(It.Is<string>(path => path.PathEquals(Path.Combine(_reviewRoot, "Show Name")))), Times.Once());

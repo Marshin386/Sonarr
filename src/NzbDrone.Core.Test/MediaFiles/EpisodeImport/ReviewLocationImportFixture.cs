@@ -80,7 +80,7 @@ namespace NzbDrone.Core.Test.MediaFiles.EpisodeImport
                   .Returns(new EpisodeFileMoveResult());
 
             Mocker.GetMock<IMoveEpisodeFiles>()
-                  .Setup(service => service.StageEpisodeFile(It.IsAny<EpisodeFile>(), It.IsAny<LocalEpisode>(), It.IsAny<bool>()))
+                  .Setup(service => service.StageEpisodeFile(It.IsAny<EpisodeFile>(), It.IsAny<LocalEpisode>(), It.IsAny<bool>(), It.IsAny<bool>()))
                   .Returns(_reviewPath);
         }
 
@@ -159,7 +159,7 @@ namespace NzbDrone.Core.Test.MediaFiles.EpisodeImport
 
             result.Result.Should().Be(ImportResultType.Imported);
             result.StagedForReview.Should().BeFalse();
-            Mocker.GetMock<IMoveEpisodeFiles>().Verify(service => service.StageEpisodeFile(It.IsAny<EpisodeFile>(), It.IsAny<LocalEpisode>(), It.IsAny<bool>()), Times.Never());
+            Mocker.GetMock<IMoveEpisodeFiles>().Verify(service => service.StageEpisodeFile(It.IsAny<EpisodeFile>(), It.IsAny<LocalEpisode>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never());
             Mocker.GetMock<IUpgradeMediaFiles>().Verify(service => service.UpgradeEpisodeFile(It.IsAny<EpisodeFile>(), It.IsAny<LocalEpisode>(), false), Times.Once());
             Mocker.GetMock<IReviewItemService>().Verify(service => service.Add(It.IsAny<ReviewItem>()), Times.Never());
         }
@@ -173,9 +173,22 @@ namespace NzbDrone.Core.Test.MediaFiles.EpisodeImport
 
             Subject.Import(new List<ImportDecision> { new ImportDecision(localEpisode) }, false);
 
-            Mocker.GetMock<IMoveEpisodeFiles>().Verify(service => service.StageEpisodeFile(It.IsAny<EpisodeFile>(), It.IsAny<LocalEpisode>(), It.IsAny<bool>()), Times.Never());
+            Mocker.GetMock<IMoveEpisodeFiles>().Verify(service => service.StageEpisodeFile(It.IsAny<EpisodeFile>(), It.IsAny<LocalEpisode>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never());
             Mocker.GetMock<IMediaFileService>().Verify(service => service.Add(It.IsAny<EpisodeFile>()), Times.Once());
             Mocker.GetMock<IReviewItemService>().Verify(service => service.Add(It.IsAny<ReviewItem>()), Times.Never());
+        }
+
+        [Test]
+        public void should_replace_an_existing_review_item_when_the_episode_is_imported_again()
+        {
+            GivenReviewEnabled();
+
+            var result = Import(NewEpisode());
+
+            result.Result.Should().Be(ImportResultType.Imported);
+            Mocker.GetMock<IReviewItemService>().Verify(service => service.RemoveForEpisodes(It.Is<IEnumerable<int>>(ids => ids.SequenceEqual(new[] { _episode.Id }))), Times.Once());
+            Mocker.GetMock<IMoveEpisodeFiles>().Verify(service => service.StageEpisodeFile(It.IsAny<EpisodeFile>(), It.IsAny<LocalEpisode>(), false, true), Times.Once());
+            Mocker.GetMock<IReviewItemService>().Verify(service => service.Add(It.Is<ReviewItem>(item => item.EpisodeIds.SequenceEqual(new[] { _episode.Id }))), Times.Once());
         }
 
         private void GivenReviewEnabled()

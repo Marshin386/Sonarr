@@ -148,6 +148,16 @@ function SignalRListener() {
       return;
     }
 
+    if (name === 'review') {
+      queryClient.invalidateQueries({ queryKey: ['/review'] });
+      queryClient.invalidateQueries({ queryKey: ['/episode'] });
+      queryClient.invalidateQueries({ queryKey: ['/calendar'] });
+      queryClient.invalidateQueries({ queryKey: ['/wanted/missing'] });
+      queryClient.invalidateQueries({ queryKey: ['/wanted/cutoff'] });
+
+      return;
+    }
+
     if (name === 'episode') {
       if (body.action === 'updated') {
         const updatedItem = body.resource as Episode;
