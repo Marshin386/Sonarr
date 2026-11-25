@@ -156,8 +156,8 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport
                             Added = DateTime.UtcNow
                         });
 
-                        // The library file, history, and notifications are written when a later
-                        // rescan adopts the rsync copy. A staged import has no EpisodeFile yet.
+                        // History, extras, and notifications are written when a rescan adopts the file.
+                        // A staged import has no EpisodeFile yet.
                         _logger.Info("Staged episode import for review at {0}", reviewPath);
                         importResults.Add(ImportResult.Staged(importDecision, reviewPath));
                         continue;

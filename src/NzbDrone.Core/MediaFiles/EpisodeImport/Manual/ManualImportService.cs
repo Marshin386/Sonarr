@@ -619,8 +619,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
 
             if (untrackedImports.Any(result => result.StagedForReview))
             {
-                // TODO: Round 3 sends library notifications after the reviewed file is adopted.
-                _logger.Debug("Staged {0} manual import(s) for review. Skipping library notifications.", untrackedImports.Count(result => result.StagedForReview));
+                _logger.Debug("Staged {0} manual import(s) for review. Library notifications are sent when a rescan adopts the file.", untrackedImports.Count(result => result.StagedForReview));
             }
 
             foreach (var groupedTrackedDownload in importedTrackedDownload.GroupBy(i => i.TrackedDownload.DownloadItem.DownloadId).ToList())

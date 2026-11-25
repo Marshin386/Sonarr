@@ -8,7 +8,6 @@ namespace NzbDrone.Core.MediaFiles
     public interface IReviewItemRepository : IBasicRepository<ReviewItem>
     {
         List<ReviewItem> GetBySeries(int seriesId);
-        List<ReviewItem> FindByDownloadId(string downloadId);
         HashSet<int> GetEpisodeIds();
     }
 
@@ -22,11 +21,6 @@ namespace NzbDrone.Core.MediaFiles
         public List<ReviewItem> GetBySeries(int seriesId)
         {
             return Query(item => item.SeriesId == seriesId).ToList();
-        }
-
-        public List<ReviewItem> FindByDownloadId(string downloadId)
-        {
-            return Query(item => item.DownloadId == downloadId).ToList();
         }
 
         public HashSet<int> GetEpisodeIds()
