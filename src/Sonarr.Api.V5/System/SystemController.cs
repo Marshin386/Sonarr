@@ -61,7 +61,7 @@ public class SystemController : Controller
         {
             AppName = BuildInfo.AppName,
             InstanceName = _configFileProvider.InstanceName,
-            Version = BuildInfo.Version.ToString(),
+            Version = BuildInfo.VersionString,
             BuildTime = BuildInfo.BuildDateTime,
             IsDebug = BuildInfo.IsDebug,
             IsProduction = RuntimeInfo.IsProduction,

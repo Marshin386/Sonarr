@@ -19,6 +19,7 @@ export interface CalendarEventGroup {
 export type CalendarStatus =
   | 'downloaded'
   | 'downloading'
+  | 'inReview'
   | 'unmonitored'
   | 'onAir'
   | 'missing'

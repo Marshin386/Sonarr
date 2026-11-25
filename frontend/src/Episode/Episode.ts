@@ -19,6 +19,9 @@ interface Episode extends ModelBase {
   title: string;
   episodeFile?: object;
   hasFile: boolean;
+  inReview?: boolean;
+  reviewPath?: string;
+  reviewItemId?: number;
   monitored: boolean;
   grabbed?: boolean;
   unverifiedSceneNumbering: boolean;

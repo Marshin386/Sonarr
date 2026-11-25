@@ -41,6 +41,7 @@ namespace NzbDrone.Core.MediaFiles
         private readonly IMediaFileTableCleanupService _mediaFileTableCleanupService;
         private readonly IRootFolderService _rootFolderService;
         private readonly IUpdateMediaInfo _updateMediaInfoService;
+        private readonly IReviewAdoptionService _reviewAdoptionService;
         private readonly IEventAggregator _eventAggregator;
         private readonly Logger _logger;
 
@@ -53,6 +54,7 @@ namespace NzbDrone.Core.MediaFiles
                                IMediaFileTableCleanupService mediaFileTableCleanupService,
                                IRootFolderService rootFolderService,
                                IUpdateMediaInfo updateMediaInfoService,
+                               IReviewAdoptionService reviewAdoptionService,
                                IEventAggregator eventAggregator,
                                Logger logger)
         {
@@ -65,6 +67,7 @@ namespace NzbDrone.Core.MediaFiles
             _mediaFileTableCleanupService = mediaFileTableCleanupService;
             _rootFolderService = rootFolderService;
             _updateMediaInfoService = updateMediaInfoService;
+            _reviewAdoptionService = reviewAdoptionService;
             _eventAggregator = eventAggregator;
             _logger = logger;
         }
@@ -135,9 +138,10 @@ namespace NzbDrone.Core.MediaFiles
 
             var seriesFiles = _mediaFileService.GetFilesBySeries(series.Id);
             var unmappedFiles = MediaFileService.FilterExistingFiles(mediaFileList, seriesFiles, series);
+            var filesToImport = _reviewAdoptionService.Adopt(series, unmappedFiles) ?? unmappedFiles;
 
             var decisionsStopwatch = Stopwatch.StartNew();
-            var decisions = _importDecisionMaker.GetImportDecisions(unmappedFiles, series, false);
+            var decisions = _importDecisionMaker.GetImportDecisions(filesToImport, series, false);
             decisionsStopwatch.Stop();
             _logger.Trace("Import decisions complete for: {0} [{1}]", series, decisionsStopwatch.Elapsed);
             _importApprovedEpisodes.Import(decisions, false);

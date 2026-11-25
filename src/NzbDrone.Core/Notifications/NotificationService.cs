@@ -6,6 +6,7 @@ using NLog;
 using NzbDrone.Common.Extensions;
 using NzbDrone.Core.Download;
 using NzbDrone.Core.HealthCheck;
+using NzbDrone.Core.MediaFiles;
 using NzbDrone.Core.MediaFiles.Events;
 using NzbDrone.Core.Messaging.Events;
 using NzbDrone.Core.Parser;
@@ -179,6 +180,11 @@ namespace NzbDrone.Core.Notifications
                 return;
             }
 
+            if (message.ImportedEpisode == null)
+            {
+                return;
+            }
+
             var downloadMessage = new DownloadMessage
             {
                 Message = GetMessage(message.EpisodeInfo.Series, message.EpisodeInfo.Episodes, message.EpisodeInfo.Quality),
@@ -219,6 +225,14 @@ namespace NzbDrone.Core.Notifications
             var episodes = message.Episodes;
             var parsedEpisodeInfo = message.TrackedDownload.RemoteEpisode.ParsedEpisodeInfo;
 
+            var destinationPaths = LibraryDestinationPaths(series, message.EpisodeFiles);
+
+            if (destinationPaths.Count == 0)
+            {
+                _logger.Debug("Skipping OnImportComplete for {0}; the import has no library file yet", series?.Title);
+                return;
+            }
+
             var downloadMessage = new ImportCompleteMessage
             {
                 Message = parsedEpisodeInfo.FullSeason
@@ -226,12 +240,12 @@ namespace NzbDrone.Core.Notifications
                     : GetMessage(series, episodes, parsedEpisodeInfo.Quality),
                 Series = series,
                 Episodes = episodes,
-                EpisodeFiles = message.EpisodeFiles,
+                EpisodeFiles = message.EpisodeFiles.Where(file => file != null).ToList(),
                 DownloadClientInfo = message.TrackedDownload.DownloadItem.DownloadClientInfo,
                 DownloadId = message.TrackedDownload.DownloadItem.DownloadId,
                 Release = message.Release,
                 SourcePath = message.TrackedDownload.DownloadItem.OutputPath.FullPath,
-                DestinationPath = message.EpisodeFiles.Select(e => Path.Join(series.Path, e.RelativePath)).ToList().GetLongestCommonPath(),
+                DestinationPath = destinationPaths.GetLongestCommonPath(),
                 ReleaseGroup = parsedEpisodeInfo.ReleaseGroup,
                 ReleaseQuality = parsedEpisodeInfo.Quality
             };
@@ -263,6 +277,14 @@ namespace NzbDrone.Core.Notifications
             var episodes = message.Episodes;
             var parsedEpisodeInfo = message.ParsedEpisodeInfo;
 
+            var destinationPaths = LibraryDestinationPaths(series, message.EpisodeFiles);
+
+            if (destinationPaths.Count == 0)
+            {
+                _logger.Debug("Skipping OnImportComplete for {0}; the import has no library file yet", series?.Title);
+                return;
+            }
+
             var downloadMessage = new ImportCompleteMessage
             {
                 Message = parsedEpisodeInfo.FullSeason
@@ -270,10 +292,10 @@ namespace NzbDrone.Core.Notifications
                     : GetMessage(series, episodes, parsedEpisodeInfo.Quality),
                 Series = series,
                 Episodes = episodes,
-                EpisodeFiles = message.EpisodeFiles,
+                EpisodeFiles = message.EpisodeFiles.Where(file => file != null).ToList(),
                 SourcePath = message.SourcePath,
                 SourceTitle = parsedEpisodeInfo.ReleaseTitle,
-                DestinationPath = message.EpisodeFiles.Select(e => Path.Join(series.Path, e.RelativePath)).ToList().GetLongestCommonPath(),
+                DestinationPath = destinationPaths.GetLongestCommonPath(),
                 ReleaseGroup = parsedEpisodeInfo.ReleaseGroup,
                 ReleaseQuality = parsedEpisodeInfo.Quality
             };
@@ -552,6 +574,19 @@ namespace NzbDrone.Core.Notifications
         public void HandleAsync(HealthCheckCompleteEvent message)
         {
             ProcessQueue();
+        }
+
+        private static List<string> LibraryDestinationPaths(Series series, IEnumerable<EpisodeFile> episodeFiles)
+        {
+            if (series?.Path.IsNullOrWhiteSpace() != false || episodeFiles == null)
+            {
+                return new List<string>();
+            }
+
+            return episodeFiles
+                .Where(file => file?.RelativePath.IsNotNullOrWhiteSpace() == true)
+                .Select(file => Path.Join(series.Path, file.RelativePath))
+                .ToList();
         }
 
         private void ProcessQueue()

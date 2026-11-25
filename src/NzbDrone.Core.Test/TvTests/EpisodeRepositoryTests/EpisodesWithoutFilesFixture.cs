@@ -5,6 +5,9 @@ using FizzWare.NBuilder;
 using FluentAssertions;
 using NUnit.Framework;
 using NzbDrone.Core.Datastore;
+using NzbDrone.Core.Languages;
+using NzbDrone.Core.MediaFiles;
+using NzbDrone.Core.Qualities;
 using NzbDrone.Core.Test.Framework;
 using NzbDrone.Core.Tv;
 
@@ -97,6 +100,26 @@ namespace NzbDrone.Core.Test.TvTests.EpisodeRepositoryTests
         private void GivenUnmonitoredFilterExpression()
         {
             _pagingSpec.FilterExpressions.Add(e => e.Monitored == false || e.Series.Monitored == false);
+        }
+
+        [Test]
+        public void should_exclude_episodes_that_are_in_review()
+        {
+            GivenMonitoredFilterExpression();
+
+            var episode = Subject.EpisodesWithoutFiles(_pagingSpec, false).Records.Single();
+
+            Db.Insert(new ReviewItem
+            {
+                SeriesId = episode.SeriesId,
+                EpisodeIds = new List<int> { episode.Id },
+                ReviewPath = "/review/tv/Show Name/Season 01/Show.mkv",
+                Quality = new QualityModel(Quality.HDTV720p),
+                Languages = new List<Language> { Language.English },
+                Added = DateTime.UtcNow
+            });
+
+            Subject.EpisodesWithoutFiles(_pagingSpec, false).Records.Should().BeEmpty();
         }
 
         [Test]

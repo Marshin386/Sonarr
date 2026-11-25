@@ -12,6 +12,7 @@ import Icon from 'Components/Icon';
 import Label from 'Components/Label';
 import Popover from 'Components/Tooltip/Popover';
 import Episode from 'Episode/Episode';
+import RemoveFromReviewButton from 'Episode/RemoveFromReviewButton';
 import { sizes, tooltipPositions } from 'Helpers/Props';
 import { CalendarStatus } from 'typings/Calendar';
 import Queue from 'typings/Queue';
@@ -129,7 +130,14 @@ function EpisodeStatusLabel({
 }: EpisodeStatusLabelProps) {
   const queueItemForEpisode = useQueueItemForEpisode(episode.id);
   const isQueueLoaded = useIsQueueDetailsLoaded();
-  const { airDateUtc, grabbed, runtime: episodeRuntime } = episode;
+  const {
+    airDateUtc,
+    grabbed,
+    inReview,
+    reviewItemId,
+    reviewPath,
+    runtime: episodeRuntime,
+  } = episode;
 
   const queueItem =
     queueItemForEpisode?.trackedDownloadState === 'imported'
@@ -138,6 +146,30 @@ function EpisodeStatusLabel({
 
   if (grabbed && !hasFile && !isQueueLoaded) {
     return null;
+  }
+
+  if (inReview && !queueItem) {
+    const label = translate('EpisodeIsInReview');
+
+    return (
+      <Popover
+        anchor={
+          <Label className={styles.inReview} size={sizes.MEDIUM}>
+            {translate('InReview')}
+          </Label>
+        }
+        title={label}
+        body={
+          <div>
+            <div className={styles.path}>{reviewPath}</div>
+            {reviewItemId ? (
+              <RemoveFromReviewButton reviewItemId={reviewItemId} />
+            ) : null}
+          </div>
+        }
+        position={tooltipPositions.BOTTOM}
+      />
+    );
   }
 
   const monitored = episode.monitored && seriesMonitored;

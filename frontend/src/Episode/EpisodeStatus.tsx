@@ -4,9 +4,11 @@ import QueueDetails from 'Activity/Queue/QueueDetails';
 import Icon from 'Components/Icon';
 import ProgressBar from 'Components/ProgressBar';
 import StatusIndicator from 'Components/StatusIndicator';
+import Popover from 'Components/Tooltip/Popover';
+import RemoveFromReviewButton from 'Episode/RemoveFromReviewButton';
 import useEpisode, { EpisodeEntity } from 'Episode/useEpisode';
 import { useEpisodeFile } from 'EpisodeFile/EpisodeFileProvider';
-import { icons, kinds, sizes } from 'Helpers/Props';
+import { icons, kinds, sizes, tooltipPositions } from 'Helpers/Props';
 import isBefore from 'Utilities/Date/isBefore';
 import translate from 'Utilities/String/translate';
 import EpisodeQuality from './EpisodeQuality';
@@ -27,7 +29,8 @@ function EpisodeStatus({
   const queueItem = useQueueItemForEpisode(episodeId);
   const episodeFile = useEpisodeFile(episodeFileId);
 
-  const { airDateUtc, grabbed, monitored } = episode || {};
+  const { airDateUtc, grabbed, inReview, monitored, reviewItemId, reviewPath } =
+    episode || {};
   const hasEpisodeFile = !!episodeFile;
   const isQueued = !!queueItem;
   const hasAired = isBefore(airDateUtc);
@@ -57,6 +60,34 @@ function EpisodeStatus({
           }
         />
       </StatusIndicator>
+    );
+  }
+
+  if (inReview) {
+    const label = translate('EpisodeIsInReview');
+
+    return (
+      <Popover
+        anchor={
+          <StatusIndicator className={styles.center} label={label}>
+            <Icon
+              className={styles.inReview}
+              name={icons.PENDING}
+              title={label}
+            />
+          </StatusIndicator>
+        }
+        title={label}
+        body={
+          <div>
+            <div className={styles.path}>{reviewPath}</div>
+            {reviewItemId ? (
+              <RemoveFromReviewButton reviewItemId={reviewItemId} />
+            ) : null}
+          </div>
+        }
+        position={tooltipPositions.LEFT}
+      />
     );
   }
 

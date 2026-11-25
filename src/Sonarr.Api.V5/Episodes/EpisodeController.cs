@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using NzbDrone.Core.CustomFormats;
 using NzbDrone.Core.DecisionEngine.Specifications;
+using NzbDrone.Core.MediaFiles;
+using NzbDrone.Core.MediaFiles.Events;
+using NzbDrone.Core.Messaging.Events;
 using NzbDrone.Core.Tv;
 using NzbDrone.SignalR;
 using Sonarr.Http;
@@ -12,15 +15,22 @@ using Sonarr.Http.REST.Attributes;
 namespace Sonarr.Api.V5.Episodes;
 
 [V5ApiController]
-public class EpisodeController : EpisodeControllerWithSignalR
+public class EpisodeController : EpisodeControllerWithSignalR, IHandle<ReviewItemsChangedEvent>
 {
     public EpisodeController(ISeriesService seriesService,
                          IEpisodeService episodeService,
                          IUpgradableSpecification upgradableSpecification,
                          ICustomFormatCalculationService formatCalculator,
-                         IBroadcastSignalRMessage signalRBroadcaster)
-        : base(episodeService, seriesService, upgradableSpecification, formatCalculator, signalRBroadcaster)
+                         IBroadcastSignalRMessage signalRBroadcaster,
+                         IReviewItemService reviewItemService)
+        : base(episodeService, seriesService, upgradableSpecification, formatCalculator, signalRBroadcaster, reviewItemService)
     {
+    }
+
+    [NonAction]
+    public void Handle(ReviewItemsChangedEvent message)
+    {
+        BroadcastReviewChanges(message);
     }
 
     [HttpGet]

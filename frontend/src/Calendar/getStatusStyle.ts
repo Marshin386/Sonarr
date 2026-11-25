@@ -6,16 +6,21 @@ function getStatusStyle(
   downloading: boolean,
   startTime: Moment | undefined,
   endTime: Moment | undefined,
-  isMonitored: boolean
+  isMonitored: boolean,
+  inReview = false
 ): CalendarStatus {
   const currentTime = moment();
 
-  if (hasFile) {
-    return 'downloaded';
-  }
-
   if (downloading) {
     return 'downloading';
+  }
+
+  if (inReview) {
+    return 'inReview';
+  }
+
+  if (hasFile) {
+    return 'downloaded';
   }
 
   if (!isMonitored) {

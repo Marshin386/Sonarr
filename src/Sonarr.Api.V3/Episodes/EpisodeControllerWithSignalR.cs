@@ -4,6 +4,7 @@ using NzbDrone.Core.CustomFormats;
 using NzbDrone.Core.Datastore.Events;
 using NzbDrone.Core.DecisionEngine.Specifications;
 using NzbDrone.Core.Download;
+using NzbDrone.Core.MediaFiles;
 using NzbDrone.Core.MediaFiles.Events;
 using NzbDrone.Core.Messaging.Events;
 using NzbDrone.Core.Tv;
@@ -23,18 +24,21 @@ namespace Sonarr.Api.V3.Episodes
         protected readonly ISeriesService _seriesService;
         protected readonly IUpgradableSpecification _upgradableSpecification;
         protected readonly ICustomFormatCalculationService _formatCalculator;
+        protected readonly IReviewItemService _reviewItemService;
 
         protected EpisodeControllerWithSignalR(IEpisodeService episodeService,
                                            ISeriesService seriesService,
                                            IUpgradableSpecification upgradableSpecification,
                                            ICustomFormatCalculationService formatCalculator,
-                                           IBroadcastSignalRMessage signalRBroadcaster)
+                                           IBroadcastSignalRMessage signalRBroadcaster,
+                                           IReviewItemService reviewItemService)
             : base(signalRBroadcaster)
         {
             _episodeService = episodeService;
             _seriesService = seriesService;
             _upgradableSpecification = upgradableSpecification;
             _formatCalculator = formatCalculator;
+            _reviewItemService = reviewItemService;
         }
 
         protected EpisodeControllerWithSignalR(IEpisodeService episodeService,
@@ -42,13 +46,15 @@ namespace Sonarr.Api.V3.Episodes
                                            IUpgradableSpecification upgradableSpecification,
                                            ICustomFormatCalculationService formatCalculator,
                                            IBroadcastSignalRMessage signalRBroadcaster,
-                                           string resource)
+                                           string resource,
+                                           IReviewItemService reviewItemService)
             : base(signalRBroadcaster)
         {
             _episodeService = episodeService;
             _seriesService = seriesService;
             _upgradableSpecification = upgradableSpecification;
             _formatCalculator = formatCalculator;
+            _reviewItemService = reviewItemService;
         }
 
         protected override EpisodeResource GetResourceById(int id)
@@ -81,6 +87,8 @@ namespace Sonarr.Api.V3.Episodes
                     resource.Images = episode.Images;
                 }
             }
+
+            ApplyReviewState(new List<EpisodeResource> { resource });
 
             return resource;
         }
@@ -117,7 +125,42 @@ namespace Sonarr.Api.V3.Episodes
                 }
             }
 
+            ApplyReviewState(result);
+
             return result;
+        }
+
+        protected void BroadcastReviewChanges(ReviewItemsChangedEvent message)
+        {
+            foreach (var episodeId in message.EpisodeIds)
+            {
+                BroadcastResourceChange(ModelAction.Updated, episodeId);
+            }
+        }
+
+        private void ApplyReviewState(IList<EpisodeResource> resources)
+        {
+            if (resources == null || resources.Count == 0)
+            {
+                return;
+            }
+
+            var states = _reviewItemService.GetStatesByEpisodeId();
+
+            if (states == null || states.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var resource in resources)
+            {
+                if (states.TryGetValue(resource.Id, out var state))
+                {
+                    resource.InReview = true;
+                    resource.ReviewPath = state.ReviewPath;
+                    resource.ReviewItemId = state.ReviewItemId;
+                }
+            }
         }
 
         [NonAction]
@@ -126,6 +169,7 @@ namespace Sonarr.Api.V3.Episodes
             foreach (var episode in message.Episode.Episodes)
             {
                 var resource = episode.ToResource();
+                ApplyReviewState(new List<EpisodeResource> { resource });
                 resource.Grabbed = true;
 
                 BroadcastResourceChange(ModelAction.Updated, resource);

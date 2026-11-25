@@ -35,6 +35,7 @@ interface AgendaEventProps {
   unverifiedSceneNumbering?: boolean;
   finaleType?: string;
   hasFile: boolean;
+  inReview?: boolean;
   grabbed?: boolean;
 }
 
@@ -52,6 +53,7 @@ function AgendaEvent(props: AgendaEventProps) {
     unverifiedSceneNumbering,
     finaleType,
     hasFile,
+    inReview,
     grabbed,
   } = props;
 
@@ -79,7 +81,8 @@ function AgendaEvent(props: AgendaEventProps) {
     downloading,
     startTime,
     endTime,
-    isMonitored
+    isMonitored,
+    inReview
   );
   const missingAbsoluteNumber =
     series.seriesType === 'anime' && seasonNumber > 0 && !absoluteEpisodeNumber;

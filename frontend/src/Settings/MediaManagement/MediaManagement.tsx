@@ -281,6 +281,48 @@ function MediaManagement() {
                 legend={translate('Importing')}
                 caption={translate('ImportingCaption')}
               >
+                <FormRow size={sizes.MEDIUM}>
+                  <FormLabel>{translate('ReviewLocation')}</FormLabel>
+                  <FormInputHelpText
+                    text={translate('ReviewLocationHelpText')}
+                  />
+                  <FormInput
+                    type={inputTypes.CHECK}
+                    name="reviewLocationEnabled"
+                    onChange={handleInputChange}
+                    {...settings.reviewLocationEnabled}
+                  />
+                </FormRow>
+
+                {settings.reviewLocationEnabled.value ? (
+                  <FormRow>
+                    <FormLabel>{translate('ReviewLocationPath')}</FormLabel>
+                    <FormInputHelpText
+                      text={translate('ReviewLocationPathHelpText')}
+                    />
+                    <FormInput
+                      type={inputTypes.PATH}
+                      name="reviewLocation"
+                      includeFiles={false}
+                      onChange={handleInputChange}
+                      {...settings.reviewLocation}
+                    />
+                  </FormRow>
+                ) : null}
+
+                <FormRow size={sizes.MEDIUM}>
+                  <FormLabel>{translate('KeepOriginalFile')}</FormLabel>
+                  <FormInputHelpText
+                    text={translate('KeepOriginalFileHelpText')}
+                  />
+                  <FormInput
+                    type={inputTypes.CHECK}
+                    name="keepOriginalFile"
+                    onChange={handleInputChange}
+                    {...settings.keepOriginalFile}
+                  />
+                </FormRow>
+
                 <FormRow size={sizes.SMALL}>
                   <FormLabel>{translate('EpisodeTitleRequired')}</FormLabel>
                   <FormInputHelpText

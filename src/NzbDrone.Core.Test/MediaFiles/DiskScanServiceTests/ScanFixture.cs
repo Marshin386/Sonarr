@@ -481,5 +481,25 @@ namespace NzbDrone.Core.Test.MediaFiles.DiskScanServiceTests
             Mocker.GetMock<IEventAggregator>()
                 .Verify(v => v.PublishEvent(It.Is<SeriesScannedEvent>(c => c.Series != null && c.PossibleExtraFiles.Count == 0)), Times.Once());
         }
+
+        [Test]
+        public void should_import_files_that_adoption_left_behind()
+        {
+            GivenSeriesFolder();
+
+            var first = Path.Combine(_series.Path, "one.mkv").AsOsAgnostic();
+            var second = Path.Combine(_series.Path, "two.mkv").AsOsAgnostic();
+
+            GivenFiles(new[] { first, second });
+
+            Mocker.GetMock<IReviewAdoptionService>()
+                  .Setup(service => service.Adopt(It.IsAny<Series>(), It.IsAny<List<string>>()))
+                  .Returns(new List<string> { second });
+
+            Subject.Scan(_series);
+
+            Mocker.GetMock<IMakeImportDecision>()
+                  .Verify(decision => decision.GetImportDecisions(It.Is<List<string>>(files => files.Count == 1 && files[0] == second), _series, false), Times.Once());
+        }
     }
 }

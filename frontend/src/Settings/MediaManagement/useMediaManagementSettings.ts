@@ -28,6 +28,9 @@ export interface MediaManagementSettingsModel {
   fileDate: string;
   recycleBin: string;
   recycleBinCleanupDays: number;
+  reviewLocationEnabled: boolean;
+  reviewLocation: string;
+  keepOriginalFile: boolean;
   allowFingerprinting: string;
   seasonPackUpgrade: string;
   seasonPackUpgradeThreshold: number;

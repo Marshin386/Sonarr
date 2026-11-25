@@ -1,0 +1,20 @@
+# Sample stack for this fork. Host port 8990 avoids an existing Sonarr on 8989.
+# Replace every /path/to/... directory before you start it.
+# Back up the config folder first. Migration 241 is not compatible with official Sonarr.
+
+services:
+  sonarr:
+    image: ghcr.io/marshin386/sonarr:latest
+    container_name: sonarr-review
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - "8990:8989"
+    volumes:
+      - /path/to/config:/config
+      - /path/to/tv:/tv
+      - /path/to/downloads:/downloads
+      - /path/to/review:/data/review
+    restart: unless-stopped

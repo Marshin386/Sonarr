@@ -100,6 +100,13 @@ function Legend() {
         />
 
         <LegendItem
+          status="inReview"
+          name={translate('InReview')}
+          tooltip={translate('CalendarLegendEpisodeInReviewTooltip')}
+          fullColorEvents={fullColorEvents}
+        />
+
+        <LegendItem
           status="downloaded"
           tooltip={translate('CalendarLegendEpisodeDownloadedTooltip')}
           fullColorEvents={fullColorEvents}

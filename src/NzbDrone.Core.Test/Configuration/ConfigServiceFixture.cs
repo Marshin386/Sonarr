@@ -52,6 +52,27 @@ namespace NzbDrone.Core.Test.Configuration
         }
 
         [Test]
+        public void review_location_settings_should_default_off()
+        {
+            Subject.ReviewLocationEnabled.Should().BeFalse();
+            Subject.ReviewLocation.Should().BeEmpty();
+            Subject.KeepOriginalFile.Should().BeFalse();
+            Mocker.GetMock<IConfigRepository>().Verify(c => c.Insert(It.IsAny<Config>()), Times.Never());
+        }
+
+        [Test]
+        public void review_location_settings_should_round_trip()
+        {
+            Subject.ReviewLocationEnabled = true;
+            Subject.ReviewLocation = "/review/tv";
+            Subject.KeepOriginalFile = true;
+
+            AssertUpsert("ReviewLocationEnabled", true);
+            AssertUpsert("ReviewLocation", "/review/tv");
+            AssertUpsert("KeepOriginalFile", true);
+        }
+
+        [Test]
         public void PreferredMetadataLanguage_should_default_to_english()
         {
             Subject.PreferredMetadataLanguage.Should().Be((int)Language.English);

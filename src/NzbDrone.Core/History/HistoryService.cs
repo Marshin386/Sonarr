@@ -200,6 +200,11 @@ namespace NzbDrone.Core.History
                 return;
             }
 
+            if (message.ImportedEpisode == null)
+            {
+                return;
+            }
+
             var downloadId = message.DownloadId;
 
             if (downloadId.IsNullOrWhiteSpace())

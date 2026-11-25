@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -51,7 +50,7 @@ namespace NzbDrone.Host
             {
                 Logger.Info("Starting Sonarr - {0} - Version {1}",
                             Environment.ProcessPath,
-                            Assembly.GetExecutingAssembly().GetName().Version);
+                            BuildInfo.VersionString);
 
                 var startupContext = new StartupContext(args);
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);

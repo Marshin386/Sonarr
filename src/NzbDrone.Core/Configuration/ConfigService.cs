@@ -109,6 +109,24 @@ namespace NzbDrone.Core.Configuration
             set { SetValue("RecycleBinCleanupDays", value); }
         }
 
+        public bool ReviewLocationEnabled
+        {
+            get { return GetValueBoolean("ReviewLocationEnabled", false); }
+            set { SetValue("ReviewLocationEnabled", value); }
+        }
+
+        public string ReviewLocation
+        {
+            get { return GetValue("ReviewLocation", string.Empty); }
+            set { SetValue("ReviewLocation", value); }
+        }
+
+        public bool KeepOriginalFile
+        {
+            get { return GetValueBoolean("KeepOriginalFile", false); }
+            set { SetValue("KeepOriginalFile", value); }
+        }
+
         public int RssSyncInterval
         {
             get { return GetValueInt("RssSyncInterval", 15); }
